@@ -20,5 +20,4 @@
 *.swp
 *.swo
 
-# Project specific
-honcho-coupon-service
+scripts/
