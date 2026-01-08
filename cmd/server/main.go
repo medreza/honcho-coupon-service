@@ -18,12 +18,13 @@ import (
 func main() {
 	ctx := context.Background()
 
-	if err := database.InitDB(ctx); err != nil {
+	dbPool, err := database.InitDB(ctx)
+	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.CloseDB()
+	defer dbPool.Close()
 
-	couponRepo := repository.NewCouponRepository(database.GetPool())
+	couponRepo := repository.NewCouponRepository(dbPool)
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 
 	router := gin.Default()

@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func runMigrations(ctx context.Context) error {
+func runMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	_, err := pool.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS coupons (
 			id SERIAL PRIMARY KEY,

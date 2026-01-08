@@ -110,17 +110,17 @@ func TestConcurrency(t *testing.T) {
 		}
 		defer resp.Body.Close()
 
-		var details struct {
+		var couponDetails struct {
 			Remaining int      `json:"remaining_amount"`
 			ClaimedBy []string `json:"claimed_by"`
 		}
-		json.NewDecoder(resp.Body).Decode(&details)
+		json.NewDecoder(resp.Body).Decode(&couponDetails)
 
-		if details.Remaining != 9 {
-			t.Errorf("Expected 9 remaining stock, got %d", details.Remaining)
+		if couponDetails.Remaining != 9 {
+			t.Errorf("Expected 9 remaining stock, got %d", couponDetails.Remaining)
 		}
-		if len(details.ClaimedBy) != 1 {
-			t.Errorf("Expected 1 user claim, got %d", len(details.ClaimedBy))
+		if len(couponDetails.ClaimedBy) != 1 {
+			t.Errorf("Expected 1 user claim, got %d", len(couponDetails.ClaimedBy))
 		}
 	})
 }
