@@ -1,20 +1,20 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Coupon struct {
-	ID              int       `json:"id"`
-	Name            string    `json:"name"`
-	Amount          int       `json:"amount"`
-	RemainingAmount int       `json:"remaining_amount"`
-	CreatedAt       time.Time `json:"created_at"`
+	Name            string    `json:"name" bson:"name"`
+	Amount          int       `json:"amount" bson:"amount"`
+	RemainingAmount int       `json:"remaining_amount" bson:"remaining_amount"`
+	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
 }
 
 type Claim struct {
-	ID         int       `json:"id"`
-	UserID     string    `json:"user_id"`
-	CouponName string    `json:"coupon_name"`
-	ClaimedAt  time.Time `json:"claimed_at"`
+	UserID     string    `json:"user_id" bson:"user_id"`
+	CouponName string    `json:"coupon_name" bson:"coupon_name"`
+	ClaimedAt  time.Time `json:"claimed_at" bson:"claimed_at"`
 }
 
 type CreateCouponRequest struct {

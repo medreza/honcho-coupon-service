@@ -18,13 +18,14 @@ import (
 func main() {
 	ctx := context.Background()
 
-	dbPool, err := database.InitDB(ctx)
+	mongoClient, err := database.InitDB(ctx)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer dbPool.Close()
+	defer mongoClient.Disconnect(ctx)
 
-	couponRepo := repository.NewCouponRepository(dbPool)
+	couponRepo := repository.NewCouponRepository(mongoClient)
+
 	couponHandler := handlers.NewCouponHandler(couponRepo)
 
 	router := gin.Default()

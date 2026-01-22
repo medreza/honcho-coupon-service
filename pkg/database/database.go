@@ -4,30 +4,30 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func InitDB(ctx context.Context) (*pgxpool.Pool, error) {
-	dbURL := os.Getenv("POSTGRESQL_URL")
-	if dbURL == "" {
-		dbURL = "postgres://admin:admin123@localhost:5432/coupon?sslmode=disable"
+func InitDB(ctx context.Context) (*mongo.Client, error) {
+	mongoURI := os.Getenv("MONGODB_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017/coupon?replicaSet=rs0"
 	}
 
-	pool, err := pgxpool.New(ctx, dbURL)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		return nil, fmt.Errorf("unable to create connection pool: %w", err)
+		return nil, fmt.Errorf("failed to connect to mongodb: %w", err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("unable to ping database: %w", err)
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		return nil, fmt.Errorf("failed to ping mongodb: %w", err)
 	}
 
-	if err := runMigrations(ctx, pool); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("unable to run migrations: %w", err)
-	}
-
-	return pool, nil
+	return client, nil
 }

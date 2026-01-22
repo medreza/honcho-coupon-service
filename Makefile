@@ -16,5 +16,5 @@ test:
 	@echo "Running tests..."
 	@make build
 	@$(DOCKER_COMPOSE) up --remove-orphans -d
-	@go test -v ./...
+	@go test -v -count=1 ./...
 	@$(DOCKER_COMPOSE) down
