@@ -1,4 +1,5 @@
-# Honcho Coupon Service
+# Honcho Coupon Service (MongoDB version)
+> This is the MongoDB version of Honcho Coupon Service. If you are looking for the PostgreSQL version, please check the `master` branch: [Honcho Coupon Service](https://github.com/medreza/honcho-coupon-service).
 
 A high concurrency 'Flash Sale' Coupon service with strict consistency and data integrity.
 
