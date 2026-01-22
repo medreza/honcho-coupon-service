@@ -61,35 +61,32 @@ curl http://localhost:8080/api/coupons/PROMO_123
 ## Architecture Notes
 
 ### Database Design
-The service uses PostgreSQL with a clear separation of concerns between coupon definitions and claim history. 
+The service uses MongoDB as its primary data store. MongoDB is great for its flexibility and high performance read/write capabilities. To ensure strict consistency and data integrity during high concurrency events, the service leverages Mongo's native multi-document transaction which is supported in replica set configuration. For local development, the `docker-compose.yml` is configured to automatically initialize a single node replica set (`rs0`) which is required for MongoDB to be able to use transaction.
 
-PostgreSQL is chosen for this service (over MongoDB or other NoSQL databases) because relational database offers better consistency and data integrity than non-relational database, and PostgreSQL is ACID-compliant out of the box and has native row-level locking, which is perfect for this service use case.
+#### Collections
 
-#### Coupons Table
-| Column | Type | Constraints |
-|--------|------|-------------|
-| id | SERIAL | PRIMARY KEY |
-| name | VARCHAR(255) | UNIQUE, NOT NULL |
-| amount | INT | NOT NULL, CHECK (>= 0) |
-| remaining_amount | INT | NOT NULL, CHECK (>= 0) |
-| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP |
+**`coupons`**
+| Field | Type | Description |
+|-------|------|-------------|
+| name | String | Unique name of the coupon |
+| amount | Int32 | Total amount of coupons available |
+| remaining_amount | Int32 | Current remaining stock (must be >= 0) |
+| created_at | DateTime | Timestamp when the coupon was created |
 
-#### Claims Table
-| Column | Type | Constraints |
-|--------|------|-------------|
-| id | SERIAL | PRIMARY KEY |
-| user_id | VARCHAR(255) | NOT NULL |
-| coupon_name | VARCHAR(255) | NOT NULL, REFERENCES coupons(name) |
-| claimed_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP |
+**`claims`**
+| Field | Type | Description |
+|-------|------|-------------|
+| user_id | String | ID of the user who claimed the coupon |
+| coupon_name | String | Name of the claimed coupon |
+| claimed_at | DateTime | Timestamp when the claim was recorded |
 
-##### Claims Table Constraints
-| Type | Columns | Description |
-|--------|------|-------------|
-| UNIQUE | (user_id, coupon_name) | Prevents double claims so that each user can only claim a coupon once |
+#### Indexes
+- **`coupons`**: Unique index on `name`.
+- **`claims`**: Unique index on the pair `(user_id, coupon_name)` to prevent double claims.
 
 ### Strategy for Handling Concurrency
 To prevent race conditions (which might cause claiming more coupons than available in stock), the service implemented these strategies:
 
-1.  **Row Locking (`SELECT FOR UPDATE`)**: Inside the database transaction, the service locks the specific coupon row when it's being claimed. This will make sure that when a request is checking and updating the stock, other request can't touch that same row at the same time.
-2.  **Database Constraint**: A unique constraint on the `(user_id, coupon_name)` pair in the `claims` table will prevent any user from claiming the same coupon twice, even if the endpoint calls are made at the same time.
-3.  **Atomic Transactions**: All coupon operation (checking stock, inserting the claim record, and decrementing the remaining count) are wrapped in a database transaction. If any step fails in the middle of the operation (e.g. duplicate claim or empty stock), the whole operation will be rolled back.
+1.  **Atomic Transactions**: By utilizing MongoDB's native multi-document transactions, all coupon operation (checking stock, inserting the claim record, and decrementing the remaining count) are wrapped in a transaction. If any step fails in the middle of the operation (e.g. duplicate claim or empty stock), the whole operation will be rolled back.
+2.  **Atomic Update (inside the claiming transaction)**: Coupon stock is decremented using the `$inc` operator with a filter that ensures `remaining_amount > 0`. This atomic operation will prevent the stock from ever dropping below zero.
+3.  **Database Constraint**: A unique constraint on the `(user_id, coupon_name)` pair in the `claims` collection will prevent any user from claiming the same coupon twice, even if the endpoint calls are made at the same time.
