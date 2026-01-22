@@ -1,5 +1,7 @@
 # Honcho Coupon Service
 
+> By the way, I also made an alternative service implementation using MongoDB. The Mongo based implementation can be found in the `use-mongo` branch: https://github.com/medreza/honcho-coupon-service/tree/use-mongo
+
 A high concurrency 'Flash Sale' Coupon service with strict consistency and data integrity.
 
 ## Prerequisites
