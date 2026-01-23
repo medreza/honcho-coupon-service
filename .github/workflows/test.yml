@@ -1,0 +1,46 @@
+name: Go Test
+
+on:
+  push:
+    branches: [ use-mongo ]
+  pull_request:
+    branches: [ use-mongo ]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: Run tests
+      run: |
+        make build
+        docker compose up -d
+        echo "Waiting for service to be ready..."
+        for i in {1..20}; do
+          if curl -s http://localhost:8080/api/coupons > /dev/null; then
+            echo "Service is ready!"
+            break
+          fi
+          echo "Waiting..."
+          sleep 2
+        done
+        go test -v -count=1 ./...
+      env:
+        PORT: 8080
+
+    - name: Stop services
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "failure" ]; then
+          docker compose logs
+        fi
+        docker compose down
